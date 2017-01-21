@@ -21,16 +21,16 @@ class InferenceRulesCheck {
 
   def checkPCRAny(e: FAExpression): Option[FAExpression] = {
     e match {
-      case Implication(x, AnySubst(name, y)) if !x.entersFree(name) && proved.contains(Implication(x, y))
-      => Some(Implication(x, y))
+      case Implication(x, AnySubst(name, y)) if proved.contains(Implication(x, y))
+      => if (!x.entersFree(name)) Some(Implication(x, y)) else throw new VarEnterFree(0, name, x)
       case _ => None
     }
   }
 
   def checkPCRExists(e: FAExpression): Option[FAExpression] = {
     e match {
-      case Implication(ExistsSubst(name, x), y) if !y.entersFree(name) && proved.contains(Implication(x, y))
-      => Some(Implication(x, y))
+      case Implication(ExistsSubst(name, x), y) if proved.contains(Implication(x, y))
+      => if (!y.entersFree(name)) Some(Implication(x, y)) else throw new VarEnterFree(0, name, y)
       case _ => None
     }
 

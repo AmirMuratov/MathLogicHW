@@ -2,7 +2,7 @@ package homeworks
 
 import java.io.PrintWriter
 
-import library.formalarithmetic.{DeductionFA, FAProveChecker, FormalArithmeticParser}
+import library.formalarithmetic._
 
 import scala.io.Source._
 
@@ -14,7 +14,7 @@ object Task4 {
   val incorrect = 1 to 11
 
   def main(args: Array[String]) {
-    for (i <- incorrect) {
+    for (i <- correct) {
       println(i)
       val inputFileName = s"tests/HW4/correct$i.in"
       val outputFileName = s"res$i.out"
@@ -33,9 +33,13 @@ object Task4 {
       }
 
       val d = new DeductionFA(header.get._1, header.get._2, expressions.map(_.get))
-      val result = d.deduction()
-      output.println(s"${result._1.mkString(",")}|-${result._2}")
-      new FAProveChecker().ProveChecker(result._1, result._3).foreach(output.println)
+      try {
+        val result = d.deduction()
+        output.println(s"${result._1.mkString(",")}|-${result._2}")
+        new FAProveChecker().ProveChecker(result._1, result._3).foreach(output.println)
+      } catch {
+        case e: FAException => output.println(e.getError)
+      }
       output.close()
     }
   }

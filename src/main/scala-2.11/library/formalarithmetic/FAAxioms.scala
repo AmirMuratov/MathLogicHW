@@ -28,12 +28,12 @@ object FAAxioms {
     expr match {
       case Implication(AnySubst(name, a1), a2) if (isSubstituted(name, a1, a2) match {
         case Right(None) => true
-        case Right(Some(k)) if isFreeForSubst(a1, k, name) => true
+        case Right(Some(k)) => if (isFreeForSubst(a1, k, name)) true else throw new TermNotFreeForSubst(0, k, a1, name)
         case _ => false
       }) => Some("11")
       case Implication(a1, ExistsSubst(name, a2)) if (isSubstituted(name, a2, a1) match {
         case Right(None) => true
-        case Right(Some(k)) if isFreeForSubst(a2, k, name) => true
+        case Right(Some(k)) => if (isFreeForSubst(a2, k, name)) true else throw new TermNotFreeForSubst(0, k, a2, name)
         case _ => false
       }) => Some("12")
       case _ => None

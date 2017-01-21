@@ -80,7 +80,7 @@ class FormalArithmeticParser(val input: ParserInput) extends Parser {
   def Func: Rule1[Term] = rule {
     FuncVar ~ optional("(" ~ oneOrMore(TermP).separatedBy(",") ~ ")") ~>
       ((name: String, vars: Option[Seq[Term]]) => {
-        if (vars.isEmpty) Variable(name) else Function(name, vars.get())
+        if (vars.isEmpty) Variable(name) else Function(name, vars.get)
       })
   }
 

@@ -31,6 +31,7 @@ sealed trait Term {
       case Sum(x, y) => ???
       case Multiplication(x, y) => ???
       case Function(name, vars) => ???
+      case Variable(name) => ???
       case Zero() => ???
       case PlusOne(term) => ???
     }
@@ -48,21 +49,36 @@ sealed trait Term {
   }
 
   def getVariables: Set[String] = {
-    case Sum(x, y) => x.getVariables ++ y.getVariables
-    case Multiplication(x, y) => x.getVariables ++ y.getVariables
-    case Function(funcName, vars) => vars.flatMap(_.getVariables)
-    case Variable(name) => Set(name)
-    case Zero() => Set()
-    case PlusOne(x) => x.getVariables
+    this match {
+      case Sum(x, y) => x.getVariables ++ y.getVariables
+      case Multiplication(x, y) => x.getVariables ++ y.getVariables
+      case Function(funcName, vars) => vars.flatMap(_.getVariables).toSet
+      case Variable(name) => Set(name)
+      case Zero() => Set()
+      case PlusOne(x) => x.getVariables
+    }
   }
 
   def canSubst(varName: String, vars: Set[String], curBounded: Set[String]): Boolean = {
-    case Sum(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
-    case Multiplication(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
-    case Function(funcName, funcVars) => funcVars.forall(_.canSubst(varName, vars, curBounded))
-    case Variable(name) => if (name.equals(varName)) vars.intersect(curBounded).isEmpty else true
-    case Zero() => true
-    case PlusOne(x) => x.canSubst(varName, vars, curBounded)
+    this match {
+      case Sum(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
+      case Multiplication(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
+      case Function(funcName, funcVars) => funcVars.forall(_.canSubst(varName, vars, curBounded))
+      case Variable(name) => if (name.equals(varName)) vars.intersect(curBounded).isEmpty else true
+      case Zero() => true
+      case PlusOne(x) => x.canSubst(varName, vars, curBounded)
+    }
+  }
+
+  def entersFree(varToCheck: String): Boolean = {
+    this match {
+      case Sum(x, y) => x.entersFree(varToCheck) || y.entersFree(varToCheck)
+      case Multiplication(x, y) => x.entersFree(varToCheck) || y.entersFree(varToCheck)
+      case Function(name, funcVars) => funcVars.forall(_.entersFree(varToCheck))
+      case Variable(name) => varToCheck.equals(name)
+      case Zero() => false
+      case PlusOne(x) => x.entersFree(varToCheck)
+    }
   }
 }
 

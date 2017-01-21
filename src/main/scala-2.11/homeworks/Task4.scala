@@ -2,7 +2,7 @@ package homeworks
 
 import java.io.PrintWriter
 
-import library.formalarithmetic.FormalArithmeticParser
+import library.formalarithmetic.{DeductionFA, FAProveChecker, FormalArithmeticParser}
 
 import scala.io.Source._
 
@@ -27,10 +27,10 @@ object Task4 {
       return
     }
 
-    expressions.foreach(println)
-    //val result = d.deduction()
-    //output.println(s"${result._1.mkString(",")}|-${result._2}")
-    //result._3.foreach(output.println(_))
+    val d = new DeductionFA(header.get._1, header.get._2, expressions.map(_.get))
+    val result = d.deduction()
+    output.println(s"${result._1.mkString(",")}|-${result._2}")
+    new FAProveChecker().ProveChecker(result._3).foreach(output.println)
     output.close()
   }
 }

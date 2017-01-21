@@ -9,31 +9,25 @@ sealed trait Term {
       case Sum(x, y) => "(" + x.toString + "+" + y.toString + ")"
       case Multiplication(x, y) => "(" + x.toString + "*" + y.toString + ")"
       case Function(name, vars) => name + "(" + vars.mkString(",") + ")"
+      case Variable(name) => name
       case Zero() => "0"
-      case PlusOne(term) => "(" + term.toString + "')"
+      case PlusOne(term) => term.toString + "'"
     }
   }
 
   def ==(o: Term): Boolean = {
-    (this, o) match {
-      case (Sum(x1, y1), Sum(x2, y2)) => x1 == x2 && y1 == y2
-      case (Multiplication(x1, y1), Multiplication(x2, y2)) => x1 == x2 && y1 == y2
-      case (Function(name1, vars1), Function(name2, vars2)) => name1.equals(name2) &&
-        vars1.length == vars2.length && !vars1.zip(vars2).exists((x) => !(x._1 == x._2))
-      case (Zero(), Zero()) => true
-      case (PlusOne(term1), PlusOne(term2)) => term1 == term2
-      case (_, _) => false
-    }
+    Term.equalsWithSubst(this, Map(), o, Map())
   }
 
-  override def hashCode() = {
+  def hashCodeWithSubst(subst: Map[String, Int]):Int = {
     this match {
-      case Sum(x, y) => ???
-      case Multiplication(x, y) => ???
-      case Function(name, vars) => ???
-      case Variable(name) => ???
-      case Zero() => ???
-      case PlusOne(term) => ???
+      case Sum(x, y) => x.hashCodeWithSubst(subst) * 17 + y.hashCodeWithSubst(subst) * 23
+      case Multiplication(x, y) => x.hashCodeWithSubst(subst) * 29 + y.hashCodeWithSubst(subst) * 31
+      case Function(name, vars) =>
+        name.hashCode * 41 + vars.zipWithIndex.map(x => x._1.hashCodeWithSubst(subst) * Utils.pow(47, x._2)).sum
+      case Variable(name) => if (subst.contains(name)) subst.get(name).get * 41 else name.hashCode * 41
+      case Zero() => 53
+      case PlusOne(term) => 13 * term.hashCodeWithSubst(subst)
     }
   }
 
@@ -64,7 +58,8 @@ sealed trait Term {
       case Sum(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
       case Multiplication(x, y) => x.canSubst(varName, vars, curBounded) && y.canSubst(varName, vars, curBounded)
       case Function(funcName, funcVars) => funcVars.forall(_.canSubst(varName, vars, curBounded))
-      case Variable(name) => if (name.equals(varName)) vars.intersect(curBounded).isEmpty else true
+      case Variable(name) => if (!curBounded.contains(name) && name.equals(varName))
+        vars.intersect(curBounded).isEmpty else true
       case Zero() => true
       case PlusOne(x) => x.canSubst(varName, vars, curBounded)
     }
@@ -93,6 +88,27 @@ case class Variable(name: String) extends Term
 case class Zero() extends Term
 
 case class PlusOne(x: Term) extends Term
+
+object Term {
+  def equalsWithSubst(l: Term, lSubst: Map[String, Int],
+                      r: Term, rSubst: Map[String, Int]): Boolean = {
+    (l, r) match {
+      case (Sum(x1, y1), Sum(x2, y2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst) && equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (Multiplication(x1, y1), Multiplication(x2, y2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst) && equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (Function(name1, vars1), Function(name2, vars2)) => name1.equals(name2) &&
+        vars1.length == vars2.length && !vars1.zip(vars2).exists((x) =>
+        !equalsWithSubst(x._1, lSubst, x._2, rSubst))
+      case (Variable(name1), Variable(name2)) =>
+        lSubst.contains(name1) && rSubst.contains(name2) && lSubst.get(name1) == rSubst.get(name2) ||
+        !lSubst.contains(name1) && !rSubst.contains(name2) && name1.equals(name2)
+      case (Zero(), Zero()) => true
+      case (PlusOne(term1), PlusOne(term2)) => equalsWithSubst(term1, lSubst, term2, rSubst)
+      case (_, _) => false
+    }
+  }
+}
 
 
 

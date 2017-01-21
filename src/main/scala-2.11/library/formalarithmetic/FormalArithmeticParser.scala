@@ -37,7 +37,7 @@ class FormalArithmeticParser(val input: ParserInput) extends Parser {
   }
 
   def Unary: Rule1[FAExpression] = rule {
-    PredicateP | ("!" ~ Neg ~> Negate) | ("(" ~ FAExpression ~ ")") |
+    PredicateP | ("!" ~ Unary ~> Negate) | ("(" ~ FAExpression ~ ")") |
       "@" ~ FuncVar ~ Unary ~> AnySubst | "?" ~ FuncVar ~ Unary ~> ExistsSubst
   }
 
@@ -52,11 +52,6 @@ class FormalArithmeticParser(val input: ParserInput) extends Parser {
   def Equal: Rule1[FAExpression] = rule {
     TermP ~ "=" ~ TermP ~> EqualityPredicate
   }
-
-  def Neg: Rule1[FAExpression] = rule {
-    ("!" ~ Neg ~> Negate) | ("(" ~ FAExpression ~ ")")
-  }
-
 
   //========= Terms ========
 
@@ -93,7 +88,7 @@ class FormalArithmeticParser(val input: ParserInput) extends Parser {
 object FormalArithmeticParser {
   def parseExpression(s: String): Option[FAExpression] = {
     val parser = new FormalArithmeticParser(s)
-    println(s)
+    //println(s)
     parser.ExpressionP.run() match {
       case Success(result) => Some(result)
       case Failure(e: ParseError) =>
@@ -105,7 +100,7 @@ object FormalArithmeticParser {
 
   def parseHeader(s: String): Option[(Seq[FAExpression], FAExpression)] = {
     val parser = new FormalArithmeticParser(s)
-    println(s)
+    //println(s)
     parser.HeaderP.run() match {
       case Success(result) => Some(result)
       case Failure(e: ParseError) =>

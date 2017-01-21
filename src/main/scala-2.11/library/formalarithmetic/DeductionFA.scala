@@ -23,6 +23,7 @@ class DeductionFA(hypothesis: Seq[FAExpression],
     val resultProve = new mutable.ArrayBuffer[FAExpression]()
     val rulesCheck = new InferenceRulesCheck()
     for (e <- prove) {
+      //println(e.toString)
       if (FAAxioms.check(e).isDefined || newHypothesis.contains(e)) {
         resultProve +=(e,
           Implication(e, Implication(a, e)),

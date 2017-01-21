@@ -10,42 +10,28 @@ sealed trait FAExpression {
       case Disjunction(x, y) => "(" + x.toString + "|" + y.toString + ")"
       case Implication(x, y) => "(" + x.toString + "->" + y.toString + ")"
       case Negate(x) => "!(" + x.toString + ")"
-      case AnySubst(name, expr) => "@" + name + "(" + expr.toString + ")"
-      case ExistsSubst(name, expr) => "?" + name + "(" + expr.toString + ")"
-      case Predicate(name, vars) => name + "(" + vars.mkString(",") + ")"
+      case AnySubst(name, expr) => "(@" + name + "(" + expr.toString + "))"
+      case ExistsSubst(name, expr) => "(?" + name + "(" + expr.toString + "))"
+      case Predicate(name, vars) => name + (if (vars.nonEmpty) "(" + vars.mkString(",") + ")" else "")
       case EqualityPredicate(x, y) => "(" + x.toString + "=" + y.toString + ")"
     }
   }
 
-  def ==(o: FAExpression): Boolean = {
-    (this, o) match {
-      case (Conjunction(x1, y1), Conjunction(x2, y2)) => x1 == x2 && y1 == y2
-      case (Disjunction(x1, y1), Disjunction(x2, y2)) => x1 == x2 && y1 == y2
-      case (Implication(x1, y1), Implication(x2, y2)) => x1 == x2 && y1 == y2
-      case (Negate(x1), Negate(x2)) => x1 == x2
-      case (AnySubst(name1, expr1), AnySubst(name2, expr2)) =>
-        val name = SubstVarsNameGen.getNext
-        expr1.substitute(name1, Variable(name)) == expr2.substitute(name2, Variable(name))
-      case (ExistsSubst(name1, expr1), ExistsSubst(name2, expr2)) =>
-        val name = SubstVarsNameGen.getNext
-        expr1.substitute(name1, Variable(name)) == expr2.substitute(name2, Variable(name))
-      case (Predicate(name1, vars1), Predicate(name2, vars2)) => name1.equals(name2) &&
-        vars1.length == vars2.length && !vars1.zip(vars2).exists((x) => !(x._1 == x._2))
-      case (EqualityPredicate(x1, y1), EqualityPredicate(x2, y2)) => x1 == x2 && y1 == y2
-      case (_, _) => false
-    }
-  }
+  def ==(o: FAExpression): Boolean = FAExpression.equalsWithSubst(this, Map(), o, Map())
 
-  override def hashCode() = {
+  override def hashCode() = hashCodeWithSubst(Map())
+
+  def hashCodeWithSubst(subst: Map[String, Int]):Int = {
     this match {
-      case Conjunction(x, y) => 13 * x.hashCode() + 17 * y.hashCode()
-      case Disjunction(x, y) => 19 * x.hashCode() + 23 * y.hashCode()
-      case Implication(x, y) => 29 * x.hashCode() + 31 * y.hashCode()
-      case Negate(x) => 37 * x.hashCode()
-      case AnySubst(name, expr) => 51 * name.hashCode() + 47 * expr.hashCode() //todo
-      case ExistsSubst(name, expr) => 53 * name.hashCode() + 47 * expr.hashCode() //todo
-      case Predicate(name, vars) => ???
-      case EqualityPredicate(x, y) => 61 * x.hashCode() + 59 * y.hashCode()
+      case Conjunction(x, y) => 13 * x.hashCodeWithSubst(subst) + 17 * y.hashCodeWithSubst(subst)
+      case Disjunction(x, y) => 19 * x.hashCodeWithSubst(subst) + 23 * y.hashCodeWithSubst(subst)
+      case Implication(x, y) => 29 * x.hashCodeWithSubst(subst) + 31 * y.hashCodeWithSubst(subst)
+      case Negate(x) => 37 * x.hashCodeWithSubst(subst)
+      case AnySubst(name, expr) => 47 * expr.hashCodeWithSubst(subst + (name -> subst.size))
+      case ExistsSubst(name, expr) => 53 * expr.hashCodeWithSubst(subst + (name -> subst.size))
+      case Predicate(name, vars) =>
+        name.hashCode * 41 + vars.zipWithIndex.map(x => x._1.hashCodeWithSubst(subst) * Utils.pow(73, x._2)).sum
+      case EqualityPredicate(x, y) => 61 * x.hashCodeWithSubst(subst) + 59 * y.hashCodeWithSubst(subst)
     }
   }
 
@@ -122,3 +108,29 @@ case class ExistsSubst(varName: String, expression: FAExpression) extends FAExpr
 case class Predicate(predicateName: String, vars: Seq[Term]) extends FAExpression
 
 case class EqualityPredicate(x: Term, y: Term) extends FAExpression
+
+object FAExpression {
+  def equalsWithSubst(l: FAExpression, lSubst: Map[String, Int],
+                      r: FAExpression, rSubst: Map[String, Int]): Boolean = {
+    (l, r) match {
+      case (Conjunction(x1, y1), Conjunction(x2, y2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst) && equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (Disjunction(x1, y1), Disjunction(x2, y2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst) && equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (Implication(x1, y1), Implication(x2, y2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst) && equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (Negate(x1), Negate(x2)) =>
+        equalsWithSubst(x1, lSubst, x2, rSubst)
+      case (AnySubst(name1, expr1), AnySubst(name2, expr2)) =>
+        equalsWithSubst(expr1, lSubst + (name1 -> lSubst.size), expr2, rSubst + (name2 -> rSubst.size))
+      case (ExistsSubst(name1, expr1), ExistsSubst(name2, expr2)) =>
+        equalsWithSubst(expr1, lSubst + (name1 -> lSubst.size), expr2, rSubst + (name2 -> rSubst.size))
+      case (Predicate(name1, vars1), Predicate(name2, vars2)) => name1.equals(name2) &&
+        vars1.length == vars2.length &&
+        !vars1.zip(vars2).exists(x => !Term.equalsWithSubst(x._1, lSubst, x._2, rSubst))
+      case (EqualityPredicate(x1, y1), EqualityPredicate(x2, y2)) =>
+        Term.equalsWithSubst(x1, lSubst, x2, rSubst) && Term.equalsWithSubst(y1, lSubst, y2, rSubst)
+      case (_, _) => false
+    }
+  }
+}

@@ -10,27 +10,33 @@ import scala.io.Source._
   * @author amir.
   */
 object Task4 {
+  val correct = List(1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+  val incorrect = 1 to 11
+
   def main(args: Array[String]) {
-    val inputFileName = "tests/HW4/correct1.in"
-    val outputFileName = "res.out"
-    val output = new PrintWriter(outputFileName)
+    for (i <- incorrect) {
+      println(i)
+      val inputFileName = s"tests/HW4/correct$i.in"
+      val outputFileName = s"res$i.out"
+      val output = new PrintWriter(outputFileName)
 
-    val lines = fromFile(inputFileName).getLines()
-    val header = FormalArithmeticParser.parseHeader(lines.next())
-    if (header.isEmpty) {
-      println("Can't parse header")
-      return
-    }
-    val expressions = lines.filter(!_.isEmpty).map(FormalArithmeticParser.parseExpression).toSeq
-    if (expressions.exists(_.isEmpty)) {
-      println("Can't parse some expressions")
-      return
-    }
+      val lines = fromFile(inputFileName).getLines()
+      val header = FormalArithmeticParser.parseHeader(lines.next())
+      if (header.isEmpty) {
+        println("Can't parse header")
+        return
+      }
+      val expressions = lines.filter(!_.isEmpty).map(FormalArithmeticParser.parseExpression).toSeq
+      if (expressions.exists(_.isEmpty)) {
+        println("Can't parse some expressions")
+        return
+      }
 
-    val d = new DeductionFA(header.get._1, header.get._2, expressions.map(_.get))
-    val result = d.deduction()
-    output.println(s"${result._1.mkString(",")}|-${result._2}")
-    new FAProveChecker().ProveChecker(result._3).foreach(output.println)
-    output.close()
+      val d = new DeductionFA(header.get._1, header.get._2, expressions.map(_.get))
+      val result = d.deduction()
+      output.println(s"${result._1.mkString(",")}|-${result._2}")
+      new FAProveChecker().ProveChecker(result._1, result._3).foreach(output.println)
+      output.close()
+    }
   }
 }

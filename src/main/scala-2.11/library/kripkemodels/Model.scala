@@ -25,9 +25,9 @@ class Model(var world: World) {
     if (!active) return true
     expression match {
       case Disjunction(x, y) =>
-        check(x) && check(y)
-      case Conjunction(x, y) =>
         check(x) || check(y)
+      case Conjunction(x, y) =>
+        check(x) && check(y)
       case Implication(x, y) =>
         checkImpl(x, y)
       case Negate(x) =>

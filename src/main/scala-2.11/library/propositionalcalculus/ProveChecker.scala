@@ -14,7 +14,7 @@ class ProveChecker {
     mpChecker.addProved(expr._1)
     if (AxiomChecker.check(expr._1).isDefined) return s"Сх. Акс. ${AxiomChecker.check(expr._1).get}"
     val mp = mpChecker.check(expr._1)
-    if (mp.isDefined) return s"M.P. ${proved.get(mp.get._1).get}, ${proved.get(mp.get._2).get}"
+    if (mp.isDefined) return s"M.P. ${proved(mp.get._1)}, ${proved(mp.get._2)}"
     "Не доказано"
   }
 

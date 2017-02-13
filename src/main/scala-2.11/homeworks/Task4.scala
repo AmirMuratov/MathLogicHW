@@ -36,7 +36,7 @@ object Task4 {
       try {
         val result = d.deduction()
         output.println(s"${result._1.mkString(",")}|-${result._2}")
-        new FAProveChecker().ProveChecker(result._1, result._3).foreach(output.println)
+        result._3.foreach(output.println)
       } catch {
         case e: FAException => output.println(e.getError)
       }

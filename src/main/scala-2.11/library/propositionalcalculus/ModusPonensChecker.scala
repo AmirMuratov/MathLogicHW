@@ -12,7 +12,7 @@ class ModusPonensChecker {
   def check(e: Expression): Option[(Expression, Expression)] = {
     if (!canBeProvedByMP.contains(e))
       return None
-    for (expr <- canBeProvedByMP.get(e).get) {
+    for (expr <- canBeProvedByMP(e)) {
       if (proved.contains(expr))
         return Some(expr, Implication(expr, e))
     }
@@ -24,7 +24,7 @@ class ModusPonensChecker {
       case Implication(x, y) =>
         if (!canBeProvedByMP.contains(y))
           canBeProvedByMP.put(y, new mutable.HashSet[Expression])
-        canBeProvedByMP.get(y).get.add(x)
+        canBeProvedByMP(y).add(x)
       case _ =>
     }
     proved.add(expr)

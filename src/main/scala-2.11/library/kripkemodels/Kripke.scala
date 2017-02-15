@@ -138,6 +138,6 @@ class Kripke() {
 }
 
 object Kripke {
-  val MAX_WORLDS: Int = 8
+  val MAX_WORLDS: Int = 7
 }
 

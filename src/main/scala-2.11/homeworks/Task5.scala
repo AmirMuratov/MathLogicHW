@@ -12,7 +12,7 @@ import scala.io.Source.fromFile
   */
 object Task5 {
   def main(args: Array[String]) {
-    val inputFileName = "tests/HW5/false2.in"
+    val inputFileName = "tests/HW5/true1.in"
     val outputFileName = "res.out"
     val output = new PrintWriter(outputFileName)
 
@@ -22,7 +22,7 @@ object Task5 {
       return
     }
 
-    Kripke.findModel(expressions.head.get) match {
+    new Kripke().findModel(expressions.head.get) match {
       case None => output.println("Формула общезначима")
       case Some(x) => output.println(x)
     }

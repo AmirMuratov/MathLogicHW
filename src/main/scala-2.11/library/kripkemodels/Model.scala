@@ -1,79 +1,76 @@
 package library.kripkemodels
 
-import library.propositionalcalculus._
-
 import scala.collection.mutable
 
 /**
-  * Created by amir on 10.02.17.
+  * Created by amir.
   */
-class Model(var world: World) {
-  private val children = new mutable.ArrayBuffer[Model]()
-  private var active = true
-  private var subtree = 0
+class Model {
+  var variablesNumber = 0
+  var variableIdToVariableName: mutable.HashMap[Int, String] = _
+  val worlds = new mutable.ArrayBuffer[World]()
 
-  def addChild(world: World) {
-    children += new Model(world)
+  def isForcedInWorld(worldNumber: Int, variableNumber: Int): Boolean =
+    worlds(worldNumber).isForced(variableNumber)
+
+  def getWorld(worldNumber: Int): World = worlds(worldNumber)
+
+  def addWorld(from: Int) {
+    worlds += World.createWorld(from)
+    if (from != -1) addTo(from, worlds.size - 1)
   }
 
-  private def checkImpl(x: Expression, y: Expression): Boolean = {
-    if (check(x) && !check(y)) return false
-    children.forall((child) => !child.isActive || child.checkImpl(x, y))
-  }
-
-  def check(expression: Expression): Boolean = {
-    if (!active) return true
-    expression match {
-      case Disjunction(x, y) =>
-        check(x) || check(y)
-      case Conjunction(x, y) =>
-        check(x) && check(y)
-      case Implication(x, y) =>
-        checkImpl(x, y)
-      case Negate(x) =>
-        if (check(x)) return false
-        children.forall((child) => !child.isActive || !child.check(x))
-      case a@PropVar(_) =>
-        world.isForced(a)
-      case _ => throw new IllegalStateException()
+  def removeLastWorld() {
+    worlds.remove(worlds.size - 1)
+    for (world <- worlds) {
+      world.to.remove(worlds.size)
     }
   }
 
-  def isActive: Boolean = active
+  def getForcedForWorld(worldNumber: Int): Int = worlds(worldNumber).forced
 
-  def setActive(active: Boolean) {
-    this.active = active
+  def setForced(worldNumber: Int, forced: Int) {
+    worlds(worldNumber).forced = forced
   }
 
-  def getWorld: World = world
-
-  def getChildren = children
-
-  def getSubtree: Int = subtree
-
-  def setSubtree(subtree: Int) {
-    this.subtree = subtree
+  def addTo(worldNumber: Int, toWorld: Int) {
+    worlds(worldNumber).addTo(toWorld)
   }
 
-  def toString(sb: StringBuilder, pref: String, isLast: Boolean): Unit = {
+  def print(world: Int, sb: StringBuilder, pref: String, isLast: Boolean): Unit = {
     sb.append(pref)
     if (isLast)
       sb.append("┗")
     else
       sb.append("┣")
-    sb.append("* ")
-    sb.append(world.getVariables.mkString(" "))
+    sb.append("*")
+    val forced = worlds(world).forced
+    var j = 0
+    while (j < variablesNumber) {
+      val forcedVariable = (forced >> j) % 2
+      if (forcedVariable == 1) sb.append(" ").append(variableIdToVariableName(j))
+      j += 1
+    }
     sb.append("\n")
-    val s = children.count(_.isActive) - 1
-    children.filter(_.isActive).zipWithIndex.foreach((x) => {
-      x._1.toString(sb, if (isLast) pref + " " else pref + "┃",
-        isLast = s == x._2)})
+    val s = worlds(world).to.size - 1
+    worlds(world).to.zipWithIndex.foreach((x) => {
+      print(x._1, sb, if (isLast) pref + " " else pref + "┃",
+        isLast = s == x._2)
+    })
   }
 
   override def toString: String = {
-    val sb = new StringBuilder
-    toString(sb, "", isLast = true)
-    sb.toString
+    val sb = new mutable.StringBuilder()
+    print(worlds.zipWithIndex.find(_._1.from == -1).get._2, sb, "", isLast = true)
+    sb.toString()
   }
 }
 
+object Model {
+  def createModel(variables: Int, variableIdToVariableName: mutable.HashMap[Int, String]): Model = {
+    val res = new Model()
+    res.variablesNumber = variables
+    res.variableIdToVariableName = variableIdToVariableName
+    res
+  }
+}

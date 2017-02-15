@@ -1,26 +1,28 @@
 package library.kripkemodels
 
-
-import library.propositionalcalculus._
-
 import scala.collection.mutable
 
 /**
-  * Created by amir on 10.02.17.
+  * Created by amir.
   */
 class World {
-  private val variables = new mutable.HashSet[Expression]
+  var from = 0
+  var to = new mutable.HashSet[Int]()
+  var forced = 0
 
-  def forceVariable(variable: Expression) {
-    variables.add(variable)
+  def isForced(variableNumber: Int): Boolean = {
+    (forced >> variableNumber) % 2 == 1
   }
 
-  def isForced(variable: Expression) = variables.contains(variable)
+  def addTo(toWorld: Int) {
+    to.add(toWorld)
+  }
+}
 
-  def isLesserSubset(other: World): Boolean =
-    variables.subsetOf(other.variables) && !other.variables.subsetOf(variables)
-
-  def getVariables = variables
-
-  override def toString: String = "World{" + "variables=" + variables + '}'
+object World {
+  def createWorld(from: Int): World = {
+    val res = new World()
+    res.from = from
+    res
+  }
 }
